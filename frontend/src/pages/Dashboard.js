@@ -82,6 +82,13 @@ export default function Dashboard() {
     if (!answerKey || !studentSheet) return setError('Please upload required files (Answer Key & Student Sheet).');
     if (studentRollSuffix.length !== 3) return setError('Please enter the 3-digit roll number suffix.');
     
+    // Calculate values locally to avoid race conditions with state updates
+    const activeConfig = faculty.teachingConfig[selectedConfigIdx];
+    const yy = 26 - parseInt(activeConfig.year);
+    const prefix = `1601${yy}733`;
+    const currRoll = `${prefix}${studentRollSuffix}`;
+    const currSubject = selectedSubject;
+
     setError(''); setLoading(true); setResults(null); setSaveMessage(''); setIsViewingHistory(false);
     
     const formData = new FormData();
@@ -92,7 +99,8 @@ export default function Dashboard() {
       const res = await axios.post('http://localhost:5000/api/grade', formData, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
-      setResults({ ...res.data, studentRollNumber: fullRollNumber, subject: selectedSubject });
+      // Sync with locally confirmed identity
+      setResults({ ...res.data, studentRollNumber: currRoll, subject: currSubject });
     } catch (err) {
       setError(err.response?.data?.message || 'Server error.');
     } finally {
@@ -377,7 +385,7 @@ export default function Dashboard() {
                           {saveMessage && <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">{saveMessage}</span>}
                           {!isViewingHistory && (
                             <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleSaveResult} disabled={loading} className="px-5 py-2 bg-foreground hover:bg-gray-200 text-background text-[10px] font-extrabold uppercase tracking-widest rounded transition-colors flex items-center disabled:opacity-50">
-                              <Save className="w-3 h-3 mr-1.5" /> Commit To Archive
+                              <Save className="w-3 h-3 mr-1.5" /> save to database
                             </motion.button>
                           )}
                         </div>
