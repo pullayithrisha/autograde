@@ -82,12 +82,12 @@ export default function Dashboard() {
     if (!answerKey || !studentSheet) return setError('Please upload required files (Answer Key & Student Sheet).');
     if (studentRollSuffix.length !== 3) return setError('Please enter the 3-digit roll number suffix.');
     
-    // Calculate values locally to avoid race conditions with state updates
-    const activeConfig = faculty.teachingConfig[selectedConfigIdx];
-    const yy = 26 - parseInt(activeConfig.year);
+    // Calculate values locally to avoid race conditions with useEffect state updates
+    const currentConfig = faculty.teachingConfig[selectedConfigIdx];
+    const yy = 26 - parseInt(currentConfig.year);
     const prefix = `1601${yy}733`;
-    const currRoll = `${prefix}${studentRollSuffix}`;
-    const currSubject = selectedSubject;
+    const currentFullRollNumber = `${prefix}${studentRollSuffix}`;
+    const currentSubject = selectedSubject;
 
     setError(''); setLoading(true); setResults(null); setSaveMessage(''); setIsViewingHistory(false);
     
@@ -99,8 +99,7 @@ export default function Dashboard() {
       const res = await axios.post('http://localhost:5000/api/grade', formData, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
-      // Sync with locally confirmed identity
-      setResults({ ...res.data, studentRollNumber: currRoll, subject: currSubject });
+      setResults({ ...res.data, studentRollNumber: currentFullRollNumber, subject: currentSubject });
     } catch (err) {
       setError(err.response?.data?.message || 'Server error.');
     } finally {
